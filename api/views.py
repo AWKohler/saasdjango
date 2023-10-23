@@ -1,8 +1,5 @@
-import os
-
 import openai as openai
 from PyPDF2 import PdfReader
-from django.contrib.auth.models import AnonymousUser
 from django.http import StreamingHttpResponse, JsonResponse, HttpResponse
 from django.utils.decorators import method_decorator
 from langchain import OpenAI
@@ -10,26 +7,12 @@ from langchain.chains import RetrievalQAWithSourcesChain
 from langchain.embeddings import OpenAIEmbeddings
 from langchain.text_splitter import CharacterTextSplitter, RecursiveCharacterTextSplitter
 from langchain.vectorstores import Chroma
-from rest_framework.decorators import permission_classes, authentication_classes
 from gradio_client import Client
 from rest_framework_api_key.permissions import HasAPIKey
-from rest_framework.decorators import parser_classes
-from rest_framework.parsers import FileUploadParser
-from rest_framework.decorators import api_view
 from rest_framework.response import Response
-from rest_framework import status
-from rest_framework import viewsets
-
-from .APIKeyAuthentication import APIKeyAuthentication
-from .CustomJWTAuthentication import CustomJWTAuthentication
-from .serializers import BotSerializer
-from .models import Bot
 from rest_framework_simplejwt.authentication import JWTAuthentication
-from rest_framework.permissions import IsAuthenticated
 import os
-import PyPDF2
 from docx import Document
-from django.http import HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.http import HttpResponse
 from rest_framework.decorators import api_view, permission_classes, authentication_classes
@@ -40,8 +23,6 @@ from django.views.generic import View
 from .models import Bot
 from django.http import HttpResponseRedirect
 from django.urls import reverse
-from django.contrib import messages
-
 
 @api_view(['GET'])
 def apiOverview(request):
@@ -61,10 +42,11 @@ def get_user(request):
     return Response(request.user.__str__())
 
 
-@api_view(["POST"])
+
 # @permission_classes([HasAPIKey])
+@api_view(["POST"])
 @permission_classes([HasAPIKey, JWTAuthentication])
-def generate_names(request):
+def gpt(request):
     if request.method == 'POST':
         # Parse the request body and extract the prompt
         prompt = request.data.get('prompt')
@@ -91,25 +73,6 @@ def generate_names(request):
 
     # Return a JSON error if the request method is not POST
     return JsonResponse({'error': 'Method not allowed.'}, status=405)
-
-
-@api_view(["POST"])
-def falcon(request):
-    if request.method == 'POST':
-        # Parse the request body and extract the prompt
-        prompt = request.data.get('prompt')
-
-        client = Client("https://tiiuae-falcon-chat.hf.space/")
-        result = client.predict(
-            # "Howdy!",  # str  in 'Click on any example and press Enter in the input textbox!' Dataset component
-            prompt,  # str  in 'Click on any example and press Enter in the input textbox!' Dataset component
-            fn_index=0
-        )
-        return Response(result)
-
-    # Return a JSON error if the request method is not POST
-    return JsonResponse({'error': 'Method not allowed.'}, status=405)
-
 
 @api_view(['POST'])
 def init_bot(request):
@@ -271,7 +234,7 @@ def query_bot_s(request):
         prompt = "Context: {} Question: {}"
         # prompt = '''Context: {} Question: {}'''
 
-        sex = prompt.format(answer, user_input)
+        xg = prompt.format(answer, user_input)
 
         # Define a generator function to stream the response
         def generate_response_now():
@@ -279,7 +242,7 @@ def query_bot_s(request):
                     model="gpt-3.5-turbo",
                     messages=[{
                         "role": "user",
-                        "content": sex
+                        "content": xg
                     }],
                     stream=True,
             ):
@@ -301,20 +264,6 @@ class BotGetView(View):
         # Preparing data for JSON response
         bot_list = list(bot.values("id", "owner", "name", "use", "initialised"))  # convert QuerySet to list of dicts
         return JsonResponse(bot_list, safe=False)  # Return HTTP JSON response
-
-
-# @method_decorator(csrf_exempt, name='dispatch')
-# class BotDetailView(View):
-#     def get(self, request, bot_id):
-#         bot = get_object_or_404(Bot, pk=bot_id)
-#         return JsonResponse({'owner': bot.owner, 'name': bot.name, 'use': bot.use, 'initialised': bot.initialised})
-
-# @method_decorator(csrf_exempt, name='dispatch')  # this is for testing only
-# class BotListView(View):
-#     def get(self, request):
-#         owner = request.GET.get('owner')
-#         bots = Bot.objects.filter(owner=owner)
-#         # Render these bots in a template or send JSON response based on your need
 
 @method_decorator(csrf_exempt, name='dispatch')
 class BotListView(View):
@@ -370,48 +319,3 @@ class BotIDGetView(View):
         }
 
         return JsonResponse(bot_dict, safe=False)
-
-
-        # return HttpResponseRedirect(reverse('bot_list') + f'?owner={bot.owner}')
-        # return HttpResponseRedirect(reverse('bot_list') + f'?owner={bot.owner}')
-
-# @method_decorator(csrf_exempt, name='dispatch')
-# class BotCreateView(View):
-#     class BotCreateView(View):
-#         def post(self, request):
-#             user = request.user if request.user.is_authenticated else None
-#             name = request.POST['name']
-#             use = request.POST['use']
-#             bot = Bot(user=user, name=name, use=use)
-#             bot.save()
-#             messages.success(request, 'Bot created successfully.')
-#             return HttpResponseRedirect(
-#                 reverse('bot_list'))  # assuming 'bot_list' is the name of URL where you list bots
-#
-# # @method_decorator(csrf_exempt, name='dispatch')
-# # class BotCreateView(View):
-# #     def post(self, request):
-# #         bot = Bot(user=request.user, name=request.POST['name'], use=request.POST['use'])
-# #         bot.save()
-# #         messages.success(request, 'Bot created successfully.')
-# #         return HttpResponseRedirect(reverse('bot_list'))  # assuming 'bot_list' is the name of URL where you list bots
-#
-#
-# @method_decorator(csrf_exempt, name='dispatch')
-# class BotUpdateView(View):
-#     def post(self, request, bot_id):
-#         bot = get_object_or_404(Bot, pk=bot_id)
-#         bot.name = request.POST['name']
-#         bot.use = request.POST['use']
-#         bot.save()
-#         messages.success(request, 'Bot updated successfully.')
-#         return HttpResponseRedirect(reverse('bot_list'))  # assuming 'bot_list' is the name of URL where you list bots
-#
-#
-# @method_decorator(csrf_exempt, name='dispatch')
-# class BotDeleteView(View):
-#     def post(self, request, bot_id):
-#         bot = get_object_or_404(Bot, pk=bot_id)
-#         bot.delete()
-#         messages.success(request, 'Bot deleted successfully.')
-#         return HttpResponseRedirect(reverse('bot_list'))  # assuming 'bot_list' is the name of URL where you list bots
