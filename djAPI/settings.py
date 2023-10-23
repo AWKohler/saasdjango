@@ -12,7 +12,7 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 import os
 from pathlib import Path
 
-from api.APIKeyMiddleware import APIKeyMiddleware
+# from api.APIKeyMiddleware import APIKeyMiddleware
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -60,7 +60,7 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
-    'api.APIKeyMiddleware.APIKeyMiddleware',
+    # 'api.APIKeyMiddleware.APIKeyMiddleware',
 ]
 
 # settings.py
@@ -77,6 +77,7 @@ REST_FRAMEWORK = {
 }
 
 SIMPLE_JWT = {
+    # for testing
     # "ACCESS_TOKEN_LIFETIME": timedelta(minutes=5),
     "ACCESS_TOKEN_LIFETIME": timedelta(minutes=55),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=1),
