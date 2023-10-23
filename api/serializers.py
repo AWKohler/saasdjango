@@ -13,4 +13,5 @@ class BotSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Bot
-        fields = ('id', 'user', 'name', 'use', 'documents')
+        fields = ('id', 'owner', 'name', 'use', 'documents')
+        # fields = ('id', 'user', 'name', 'use', 'documents')

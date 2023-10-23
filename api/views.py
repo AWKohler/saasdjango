@@ -2,7 +2,9 @@ import os
 
 import openai as openai
 from PyPDF2 import PdfReader
+from django.contrib.auth.models import AnonymousUser
 from django.http import StreamingHttpResponse, JsonResponse, HttpResponse
+from django.utils.decorators import method_decorator
 from langchain import OpenAI
 from langchain.chains import RetrievalQAWithSourcesChain
 from langchain.embeddings import OpenAIEmbeddings
@@ -32,6 +34,13 @@ from django.views.decorators.csrf import csrf_exempt
 from django.http import HttpResponse
 from rest_framework.decorators import api_view, permission_classes, authentication_classes
 from rest_framework.permissions import IsAuthenticated
+
+from django.shortcuts import render, get_object_or_404
+from django.views.generic import View
+from .models import Bot
+from django.http import HttpResponseRedirect
+from django.urls import reverse
+from django.contrib import messages
 
 
 @api_view(['GET'])
@@ -102,169 +111,7 @@ def falcon(request):
     return JsonResponse({'error': 'Method not allowed.'}, status=405)
 
 
-# @api_view(['POST'])
-# @permission_classes([IsAuthenticated])
-# @authentication_classes([JWTAuthentication])
-# def init_bot(request):
-#     if request.method == 'POST':
-#         bot_name = request.POST.get('bot_name')
-#
-#         # Assuming the bot folder structure is "media/<bot_name>/"
-#         base_path = os.path.join('media', bot_name)
-#         db_path = os.path.join(base_path, 'db')
-#
-#         os.makedirs(db_path, exist_ok=True)
-#
-#         merged_file_path = os.path.join(db_path, 'merged.txt')
-#
-#         # Retrieve all TXT, PDF, and MS Word files inside the bot folder
-#         txt_files = [file for file in os.listdir(base_path) if file.endswith('.txt')]
-#         pdf_files = [file for file in os.listdir(base_path) if file.endswith('.pdf')]
-#         docx_files = [file for file in os.listdir(base_path) if file.endswith('.docx')]
-#
-#         # Iterate over the TXT, PDF, and MS Word files and combine their content into merged.txt
-#         with open(merged_file_path, 'w') as merged_file:
-#             for file_path in txt_files + pdf_files + docx_files:
-#                 file_path = os.path.join(base_path, file_path)
-#                 with open(file_path, 'r', encoding='utf-8', errors='ignore') as file:
-#                     merged_file.write(file.read())
-#
-#         return HttpResponse(f"Bot '{bot_name}' initiated successfully.")@api_view(['POST'])
-
-# @api_view(['POST'])
-# @permission_classes([IsAuthenticated])
-# @authentication_classes([JWTAuthentication])
-# def init_bot(request):
-#     if request.method == 'POST':
-#         bot_name = request.POST.get('bot_name')
-#
-#         # Assuming the bot folder structure is "media/<bot_name>/"
-#         base_path = os.path.join('media', bot_name)
-#         db_path = os.path.join(base_path, 'db')
-#
-#         os.makedirs(db_path, exist_ok=True)
-#
-#         merged_file_path = os.path.join(db_path, 'merged.txt')
-#
-#         # Retrieve all TXT, PDF, and MS Word files inside the bot folder
-#         txt_files = [file for file in os.listdir(base_path) if file.endswith('.txt')]
-#         pdf_files = [file for file in os.listdir(base_path) if file.endswith('.pdf')]
-#         docx_files = [file for file in os.listdir(base_path) if file.endswith('.docx')]
-#
-#         # DEBUG: Print the detected files
-#         print(txt_files)
-#         print(pdf_files)
-#         print(docx_files)
-#
-#         # Merge file content into merged.txt
-#         merged_content = ""
-#         for file_path in txt_files + pdf_files + docx_files:
-#             file_path = os.path.join(base_path, file_path)
-#             with open(file_path, 'r', encoding='utf-8', errors='ignore') as file:
-#                 file_content = file.read()
-#                 merged_content += file_content
-#
-#         print(merged_content)  # DEBUG: Print the merged content
-#
-#         # Write merged content to merged.txt
-#         with open(merged_file_path, 'w') as merged_file:
-#             merged_file.write(merged_content)
-#
-#         return HttpResponse(f"Bot '{bot_name}' initiated successfully.")
-
-#
-# @api_view(['POST'])
-# @permission_classes([IsAuthenticated])
-# @authentication_classes([JWTAuthentication])
-# def init_bot(request):
-#     if request.method == 'POST':
-#         bot_name = request.POST.get('bot_name')
-#
-#         # Assuming the bot folder structure is "media/<bot_name>/documents/"
-#         base_path = os.path.join('media', bot_name)
-#         documents_path = os.path.join(base_path, 'documents')
-#         db_path = os.path.join(documents_path, 'db')
-#         merged_file_path = os.path.join(db_path, 'merged.txt')
-#
-#         # Retrieve all TXT, PDF, and MS Word files inside the "media/<bot_name>/documents/" folder
-#         txt_files = [file for file in os.listdir(documents_path) if file.endswith('.txt')]
-#         # pdf_files = [file for file in os.listdir(documents_path) if file.endswith('.pdf')]
-#         docx_files = [file for file in os.listdir(documents_path) if file.endswith('.docx')]
-#
-#         # Merge file content into merged.txt
-#         merged_content = ""
-#         # for file_path in txt_files + pdf_files + docx_files:
-#         for file_path in txt_files + docx_files:
-#             file_path = os.path.join(documents_path, file_path)
-#             with open(file_path, 'r', encoding='utf-8', errors='ignore') as file:
-#                 file_content = file.read()
-#                 merged_content += file_content
-#
-#         # Write merged content to merged.txt, overwriting existing content
-#         with open(merged_file_path, 'w') as merged_file:
-#             merged_file.write(merged_content)
-#
-#         return HttpResponse(f"Bot '{bot_name}' initiated successfully.")
-
-
-# @api_view(['POST'])
-# @permission_classes([IsAuthenticated])
-# @authentication_classes([JWTAuthentication])
-# def init_bot(request):
-#     if request.method == 'POST':
-#         bot_name = request.POST.get('bot_name')
-#
-#         # Assuming the bot folder structure is "media/<bot_name>/documents/"
-#         base_path = os.path.join('media', bot_name)
-#         documents_path = os.path.join(base_path, 'documents')
-#         db_path = os.path.join(base_path, 'db')
-#         merged_file_path = os.path.join(db_path, 'merged.txt')
-#
-#         # Retrieve all TXT, PDF, and DOCX files inside the "media/<bot_name>/documents/" folder
-#         txt_files = [file for file in os.listdir(documents_path) if file.endswith('.txt')]
-#         pdf_files = [file for file in os.listdir(documents_path) if file.endswith('.pdf')]
-#         docx_files = [file for file in os.listdir(documents_path) if file.endswith('.docx')]
-#
-#         # Merge file content
-#         merged_content = ""
-#
-#         # Process TXT files
-#         for file_path in txt_files:
-#             file_path = os.path.join(documents_path, file_path)
-#             with open(file_path, 'r', encoding='utf-8', errors='ignore') as file:
-#                 file_content = file.read()
-#                 merged_content += file_content
-#
-#         # Process PDF files
-#         for file_path in pdf_files:
-#             file_path = os.path.join(documents_path, file_path)
-#             with open(file_path, 'rb') as file:
-#                 # pdf = PyPDF2.PdfFileReader(file)
-#                 pdf = PyPDF2.PdfReader(file)
-#                 for page_num in range(len(pdf.pages)):
-#                     # page = pdf.getPage(page_num)
-#                     page = pdf.pages[page_num]
-#                     page_text = page.extract_text()
-#                     merged_content += page_text
-#
-#         # Process DOCX files
-#         for file_path in docx_files:
-#             file_path = os.path.join(documents_path, file_path)
-#             doc = Document(file_path)
-#             for paragraph in doc.paragraphs:
-#                 paragraph_text = paragraph.text
-#                 merged_content += paragraph_text
-#
-#         # Write merged content to merged.txt, overwriting existing content
-#         with open(merged_file_path, 'w') as merged_file:
-#             merged_file.write(merged_content)
-#
-#         return HttpResponse(f"Bot '{bot_name}' initiated successfully.")
-
-
 @api_view(['POST'])
-@permission_classes([IsAuthenticated])
-@authentication_classes([JWTAuthentication])
 def init_bot(request):
     if request.method == 'POST':
         bot_name = request.POST.get('bot_name')
@@ -275,11 +122,25 @@ def init_bot(request):
         db_path = os.path.join(base_path, 'db')
         merged_file_path = os.path.join(db_path, 'merged.txt')
 
+        csv_files = [file for file in os.listdir(documents_path) if file.endswith('.csv')]
+        json_files = [file for file in os.listdir(documents_path) if file.endswith('.json')]
         txt_files = [file for file in os.listdir(documents_path) if file.endswith('.txt')]
         pdf_files = [file for file in os.listdir(documents_path) if file.endswith('.pdf')]
         docx_files = [file for file in os.listdir(documents_path) if file.endswith('.docx')]
 
         merged_content = ""
+
+        for file_path in csv_files:
+            file_path = os.path.join(documents_path, file_path)
+            with open(file_path, 'r', encoding='utf-8', errors='ignore') as file:
+                file_content = file.read()
+                merged_content += file_content
+
+        for file_path in json_files:
+            file_path = os.path.join(documents_path, file_path)
+            with open(file_path, 'r', encoding='utf-8', errors='ignore') as file:
+                file_content = file.read()
+                merged_content += file_content
 
         for file_path in txt_files:
             file_path = os.path.join(documents_path, file_path)
@@ -308,6 +169,7 @@ def init_bot(request):
 
         # Vectorization
         os.environ["OPENAI_API_KEY"] = "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"
+
         # text_splitter = CharacterTextSplitter(chunk_size=1000, chunk_overlap=0)
 
         text_splitter = RecursiveCharacterTextSplitter(
@@ -325,9 +187,11 @@ def init_bot(request):
         return HttpResponse(f"Bot '{bot_name}' initiated successfully.")
 
 
+# @api_view(['POST'])
+# @permission_classes([IsAuthenticated])
+# @authentication_classes([JWTAuthentication])
+
 @api_view(['POST'])
-@permission_classes([IsAuthenticated])
-@authentication_classes([JWTAuthentication])
 def query_bot(request):
     if request.method == "POST":
         bot_name = request.POST.get('bot_name')
@@ -366,6 +230,7 @@ def query_bot(request):
         })
 
     return JsonResponse({'error': 'Invalid Method'})
+    # return HttpResponse({'error': 'Invalid Method'})
 
 
 @api_view(['POST'])
@@ -429,82 +294,124 @@ def query_bot_s(request):
     return JsonResponse({'error': 'Method not allowed.'}, status=405)
 
 
-class BotViewSet(viewsets.ModelViewSet):
-    queryset = Bot.objects.all()
-    serializer_class = BotSerializer
-    # authentication_classes = [JWTAuthentication, HasAPIKey]
-    # authentication_classes = [JWTAuthentication, APIKeyAuthentication]
-    authentication_classes = [JWTAuthentication]
-    # authentication_classes = [APIKeyAuthentication]
-    # authentication_classes = [HasAPIKey]
-    permission_classes = [IsAuthenticated]
-
-    # permission_classes = [HasAPIKey]
-
-    def get_queryset(self):
-        return Bot.objects.filter(user=self.request.user)
-
-    def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
+@method_decorator(csrf_exempt, name='dispatch')
+class BotGetView(View):
+    def get(self, request):
+        bot = Bot.objects.filter('id')[0]
+        # Preparing data for JSON response
+        bot_list = list(bot.values("id", "owner", "name", "use", "initialised"))  # convert QuerySet to list of dicts
+        return JsonResponse(bot_list, safe=False)  # Return HTTP JSON response
 
 
-# The error occurred because you're treating `HasAPIKey` as an `authentication_class`. `HasAPIKey` is actually a `permission_class`.
+# @method_decorator(csrf_exempt, name='dispatch')
+# class BotDetailView(View):
+#     def get(self, request, bot_id):
+#         bot = get_object_or_404(Bot, pk=bot_id)
+#         return JsonResponse({'owner': bot.owner, 'name': bot.name, 'use': bot.use, 'initialised': bot.initialised})
+
+# @method_decorator(csrf_exempt, name='dispatch')  # this is for testing only
+# class BotListView(View):
+#     def get(self, request):
+#         owner = request.GET.get('owner')
+#         bots = Bot.objects.filter(owner=owner)
+#         # Render these bots in a template or send JSON response based on your need
+
+@method_decorator(csrf_exempt, name='dispatch')
+class BotListView(View):
+    def get(self, request):
+        owner = request.GET.get('owner')
+        bots = Bot.objects.filter(owner=owner)
+        # Preparing data for JSON response
+        bot_list = list(bots.values("id", "owner", "name", "use", "initialised"))  # convert QuerySet to list of dicts
+        return JsonResponse(bot_list, safe=False)  # Return HTTP JSON response
+
+@method_decorator(csrf_exempt, name='dispatch')  # this is for testing only
+class BotCreateView(View):
+    def post(self, request):
+        owner = request.POST.get('owner')
+        name = request.POST.get('name')
+        use = request.POST.get('use')
+        init = request.POST.get('init')
+        bot = Bot(owner=owner, name=name, use=use, initalised=init)
+        bot.save()
+        return HttpResponseRedirect(reverse('bot_list') + f'?owner={owner}')
+
+
+@method_decorator(csrf_exempt, name='dispatch')  # this is for testing only
+class BotUpdateView(View):
+    def post(self, request, bot_id):
+        bot = get_object_or_404(Bot, pk=bot_id, owner=request.POST.get('owner'))
+        bot.name = request.POST.get('name')
+        bot.use = request.POST.get('use')
+        bot.save()
+        return HttpResponseRedirect(reverse('bot_list') + f'?owner={bot.owner}')
+
+
+@method_decorator(csrf_exempt, name='dispatch')  # this is for testing only
+class BotDeleteView(View):
+    def post(self, request, bot_id):
+        bot = get_object_or_404(Bot, pk=bot_id, owner=request.POST.get('owner'))
+        bot.delete()
+        return HttpResponseRedirect(reverse('bot_list') + f'?owner={bot.owner}')
+
+
+@method_decorator(csrf_exempt, name='dispatch')  # this is for testing only
+class BotIDGetView(View):
+    def post(self, request, bot_id):
+        # bot = get_object_or_404(Bot, pk=bot_id, owner=request.POST.get('owner'))
+        bot = get_object_or_404(Bot, pk=bot_id)
+
+        bot_dict = {
+            'id': bot.id,
+            'owner': bot.owner,
+            'name': bot.name,
+            'use': bot.use,
+            'initialised': bot.initialised
+        }
+
+        return JsonResponse(bot_dict, safe=False)
+
+
+        # return HttpResponseRedirect(reverse('bot_list') + f'?owner={bot.owner}')
+        # return HttpResponseRedirect(reverse('bot_list') + f'?owner={bot.owner}')
+
+# @method_decorator(csrf_exempt, name='dispatch')
+# class BotCreateView(View):
+#     class BotCreateView(View):
+#         def post(self, request):
+#             user = request.user if request.user.is_authenticated else None
+#             name = request.POST['name']
+#             use = request.POST['use']
+#             bot = Bot(user=user, name=name, use=use)
+#             bot.save()
+#             messages.success(request, 'Bot created successfully.')
+#             return HttpResponseRedirect(
+#                 reverse('bot_list'))  # assuming 'bot_list' is the name of URL where you list bots
 #
-# This is how it should look:
-#
-# ```python
-# from rest_framework_api_key.models import APIKey
-# from rest_framework_api_key.permissions import HasAPIKey
-#
-# class BotViewSet(viewsets.ModelViewSet):
-#     queryset = Bot.objects.all()
-#     serializer_class = BotSerializer
-#     permission_classes = [IsAuthenticated | HasAPIKey]
-#
-#     def get_queryset(self):
-#         return Bot.objects.filter(user=self.request.user)
-#
-#     def perform_create(self, serializer):
-#         serializer.save(user=self.request.user)
-# ```
-#
-# This way, when Django is doing authentication, it'll check if either of the permission classes (`IsAuthenticated` or `HasAPIKey`) returns `True`. In this scenario, an authenticated JWT token or a correct API key will let the request pass.
-#
-# However, if you need to associate the user with the API Key, you would have to create a custom Authentication class that extends from `BaseAuthentication` and override the `authenticate` method to get the user from the `APIKey` model.
-#
-# ```python
-# from rest_framework.authentication import BaseAuthentication
-# from rest_framework.exceptions import AuthenticationFailed
-# from rest_framework_api_key.models import APIKey
+# # @method_decorator(csrf_exempt, name='dispatch')
+# # class BotCreateView(View):
+# #     def post(self, request):
+# #         bot = Bot(user=request.user, name=request.POST['name'], use=request.POST['use'])
+# #         bot.save()
+# #         messages.success(request, 'Bot created successfully.')
+# #         return HttpResponseRedirect(reverse('bot_list'))  # assuming 'bot_list' is the name of URL where you list bots
 #
 #
-# class APIKeyAuthentication(BaseAuthentication):
-#     def authenticate(self, request):
-#         api_key_header = request.META.get('HTTP_AUTHORIZATION')
-#         if not api_key_header or 'API-Key' not in api_key_header:
-#            return None
-#         _, api_key_string = api_key_header.split()
-#         api_key = APIKey.objects.filter(key=api_key_string).first()
-#         if not api_key:
-#             raise AuthenticationFailed('Invalid API Key.')
+# @method_decorator(csrf_exempt, name='dispatch')
+# class BotUpdateView(View):
+#     def post(self, request, bot_id):
+#         bot = get_object_or_404(Bot, pk=bot_id)
+#         bot.name = request.POST['name']
+#         bot.use = request.POST['use']
+#         bot.save()
+#         messages.success(request, 'Bot updated successfully.')
+#         return HttpResponseRedirect(reverse('bot_list'))  # assuming 'bot_list' is the name of URL where you list bots
 #
-#         return (api_key.created_by, api_key)
-# ```
 #
-# You then implement this authentication class in your view:
-#
-# ```python
-# class BotViewSet(viewsets.ModelViewSet):
-#     queryset = Bot.objects.all()
-#     serializer_class = BotSerializer
-#     authentication_classes = [CustomJWTAuthentication, APIKeyAuthentication]
-#     permission_classes = [IsAuthenticated]
-#
-#     def get_queryset(self):
-#         return Bot.objects.filter(user=self.request.user)
-#
-#     def perform_create(self, serializer):
-#         serializer.save(user=self.request.user)
-# ```
-#
-# Remember to protect your API Key from being exposed in a production environment as this could lead to potential security issues.
+# @method_decorator(csrf_exempt, name='dispatch')
+# class BotDeleteView(View):
+#     def post(self, request, bot_id):
+#         bot = get_object_or_404(Bot, pk=bot_id)
+#         bot.delete()
+#         messages.success(request, 'Bot deleted successfully.')
+#         return HttpResponseRedirect(reverse('bot_list'))  # assuming 'bot_list' is the name of URL where you list bots
